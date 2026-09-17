@@ -1,18 +1,135 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <title>Car Rental And Leasing Software</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f8fafc; padding: 50px; text-align: center; }
-        .card { background: #1e293b; padding: 40px; border-radius: 12px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { color: #38bdf8; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoFlex - Car Rental & Leasing Software</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="card">
-        <h1>Car Rental And Leasing Software</h1>
-        <p>Ushbu loyiha muvaffaqiyatli dasturlandi va lokal tizimda ishga tushirildi.</p>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="logo">⚡ AutoFlex Drive</div>
+      <nav class="nav-menu">
+        <button class="nav-btn active" onclick="switchTab('fleet')">🚗 Avtopark Catalog</button>
+        <button class="nav-btn" onclick="switchTab('contracts')">📋 Faol Shartnomalar</button>
+        <button class="nav-btn" onclick="switchTab('calculator')">📊 Rent vs Lease Kalkulyator</button>
+        <button class="nav-btn" onclick="switchTab('maintenance')">🛠 Texnik Xizmat Trakeri</button>
+      </nav>
+      <div class="fleet-summary">
+        <h4>Avtopark Statistikasi</h4>
+        <p>Jami mashinalar: <strong id="total-cars">0</strong></p>
+        <p>Band avtomobillar: <strong id="active-rentals">0</strong></p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <!-- Tab 1: Fleet -->
+      <section id="tab-fleet" class="tab-content active">
+        <header class="top-bar">
+          <h2>Avtopark va Lizing Boshqaruvi</h2>
+          <div class="controls">
+            <input type="text" id="search-input" placeholder="Model yoki marka bo'yicha..." oninput="filterFleet()">
+            <select id="type-filter" onchange="filterFleet()">
+              <option value="all">Barcha Turlar</option>
+              <option value="Sedan">Sedan</option>
+              <option value="SUV">SUV / Krossover</option>
+              <option value="Electric">Elektromobil</option>
+              <option value="Sport">Sportcar</option>
+            </select>
+          </div>
+        </header>
+
+        <div class="car-grid" id="car-grid"></div>
+      </section>
+
+      <!-- Tab 2: Contracts -->
+      <section id="tab-contracts" class="tab-content">
+        <h2>Faol Shartnomalar va Ijara Tarixi</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Mijoz</th>
+              <th>Avtomobil</th>
+              <th>Turi</th>
+              <th>Boshlanish</th>
+              <th>Tugash</th>
+              <th>Jami Summa</th>
+              <th>Holat</th>
+            </tr>
+          </thead>
+          <tbody id="contracts-table-body"></tbody>
+        </table>
+      </section>
+
+      <!-- Tab 3: Rent vs Lease Calculator -->
+      <section id="tab-calculator" class="tab-content">
+        <h2>Qisqa Muddatli Ijara vs Lizing Qiyosiy Kalkulyatori</h2>
+        <div class="calc-box">
+          <div class="form-group">
+            <label>Avtomobil Qiymati ($):</label>
+            <input type="number" id="calc-car-value" value="35000" oninput="runCostComparison()">
+          </div>
+          <div class="form-group">
+            <label>Muddat (Oylar):</label>
+            <input type="number" id="calc-months" value="12" oninput="runCostComparison()">
+          </div>
+          <div class="calc-results" id="calc-results"></div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Fleet Maintenance -->
+      <section id="tab-maintenance" class="tab-content">
+        <h2>Avtopark Texnik Salomatligi & Servis Monitoringi</h2>
+        <div class="maintenance-grid" id="maintenance-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Booking Modal -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal-card">
+      <h3 id="modal-car-title">Avtomobil Band Qilish</h3>
+      <form id="booking-form" onsubmit="confirmBooking(event)">
+        <input type="hidden" id="modal-car-id">
+        <div class="form-group">
+          <label>Mijoz Ismi-Sharifi:</label>
+          <input type="text" id="cust-name" required placeholder="Ali Valiyev">
+        </div>
+        <div class="form-group">
+          <label>Xizmat Turi:</label>
+          <select id="service-type" onchange="updateBookingTotal()">
+            <option value="rent">Qisqa muddatli Ijara (Kunlik)</option>
+            <option value="lease">Uzoq muddatli Lizing (Oylik chegirma bilan)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Muddat (Kun/Oy):</label>
+            <input type="number" id="duration" value="3" min="1" oninput="updateBookingTotal()">
+          </div>
+          <div class="form-group">
+            <label>Sug'urta Paketi:</label>
+            <select id="insurance-pack" onchange="updateBookingTotal()">
+              <option value="basic">Standard ($0/kun)</option>
+              <option value="full">To'liq Qoplama (+$15/kun)</option>
+            </select>
+          </div>
+        </div>
+        <div class="summary-box">
+          <p>Hisoblangan kunlik/oylik stavka: <span id="modal-rate">$0</span></p>
+          <p>Jami To'lov Summasi: <strong id="modal-total-price">$0</strong></p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Bekor qilish</button>
+          <button type="submit" class="btn btn-primary">Shartnomani Tasdiqlash</button>
+        </div>
+      </form>
     </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
